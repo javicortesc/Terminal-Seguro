@@ -5,8 +5,8 @@ import random
 pygame.init()
 
 # Dimensiones de la ventana
-ANCHO = 800
-ALTO = 600
+ANCHO = 1024
+ALTO = 720
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Terminal Seguro 16-bit")
 clock = pygame.time.Clock()
