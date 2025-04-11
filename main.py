@@ -53,6 +53,19 @@ try:
         pygame.image.load("sprites/tarja_2.png").convert_alpha()
     ]
     success_image = pygame.image.load("sprites/success.png").convert_alpha()
+    numero_sprites = [
+        pygame.image.load("sprites/number_0.png").convert_alpha(),
+        pygame.image.load("sprites/number_1.png").convert_alpha(),
+        pygame.image.load("sprites/number_2.png").convert_alpha(),
+        pygame.image.load("sprites/number_3.png").convert_alpha(),
+        pygame.image.load("sprites/number_4.png").convert_alpha(),
+        pygame.image.load("sprites/number_5.png").convert_alpha(),
+        pygame.image.load("sprites/number_6.png").convert_alpha(),
+        pygame.image.load("sprites/number_7.png").convert_alpha(),
+        pygame.image.load("sprites/number_8.png").convert_alpha(),
+        pygame.image.load("sprites/number_9.png").convert_alpha()
+    ]
+    winscreen_image = pygame.image.load("sprites/winscreen.png").convert_alpha()
 except pygame.error as e:
     print(f"Error al cargar sprites de dirección: {e}")
     pygame.quit()
@@ -88,12 +101,21 @@ contenedor_largo_px = 107
 distancia_contenedor_px = 3
 ancho_bloque_px = 2 * contenedor_ancho_px + distancia_contenedor_px
 largo_bloque_px = 3 * contenedor_largo_px + 2 * distancia_contenedor_px
+juego_terminado = False
+
+#variables winscreen
+mostrar_winscreen = False
+winscreen_timer = 0
+tiempo_mostrar_winscreen = 5000  # 5000 milisegundos = 5 segundos
 
 # Calcular las dimensiones del mapa completo
 num_filas_mapa = len(mapa_layout)
 num_columnas_mapa = len(mapa_layout[0]) if num_filas_mapa > 0 else 0
 ancho_total_mapa = num_columnas_mapa * (ancho_bloque_px + ancho_calle_px) - ancho_calle_px if num_columnas_mapa > 0 else 0
 alto_total_mapa = num_filas_mapa * (largo_bloque_px + ancho_calle_px) - ancho_calle_px if num_filas_mapa > 0 else 0
+
+# contador tarjas
+contador = 0
 
 mapa_completo = pygame.Surface((ancho_total_mapa, alto_total_mapa))
 
@@ -217,6 +239,19 @@ if len(posiciones_validas_tarjas) >= num_tarjas:
 else:
     print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
 
+# contador de sprites
+def dibujar_contador_sprites(superficie, valor, posicion_x, posicion_y, espaciado=5):
+    valor_str = str(valor)
+    x_offset = 0
+    for digito in valor_str:
+        indice_digito = int(digito)
+        if 0 <= indice_digito < len(numero_sprites):
+            sprite_digito = numero_sprites[indice_digito]
+            superficie.blit(sprite_digito, (posicion_x + x_offset, posicion_y))
+            x_offset += sprite_digito.get_width() + espaciado
+        else:
+            print(f"Advertencia: No hay sprite para el dígito {digito}")
+
 # Inicializar la cámara
 camera = pygame.Rect(0, 0, ANCHO, ALTO)
 
@@ -296,8 +331,16 @@ while ejecutando:
     tarjas_colisionadas = pygame.sprite.spritecollide(trabajador, tarjas_group, True)
     if tarjas_colisionadas:
         tarjas_recolectadas += len(tarjas_colisionadas)
-        mostrar_success = True
-        success_timer = pygame.time.get_ticks()
+        print(f"Tarjas recolectadas: {tarjas_recolectadas}")
+        if tarjas_recolectadas >= num_tarjas_objetivo and not juego_terminado:
+            mostrar_winscreen = True
+            winscreen_timer = pygame.time.get_ticks()
+            juego_terminado = True
+            mostrar_success = False # Desactivar el mensaje de "Success"
+            print("¡Has recolectado todas las tarjas! Mostrando pantalla de victoria.")
+        elif not juego_terminado:
+            mostrar_success = True
+            success_timer = pygame.time.get_ticks()
 
     # Actualizar las tarjas (animación)
     tarjas_group.update()
@@ -309,7 +352,7 @@ while ejecutando:
     camera = actualizar_camara(camera, trabajador.rect, ancho_total_mapa, alto_total_mapa)
 
     # Dibujar
-    pantalla.fill((50, 50, 50)) # Podemos dejar un color de fondo por si acaso
+    pantalla.fill((50, 50, 50))
     pantalla.blit(mapa_completo, camera)
 
     # Dibujar las tarjas
@@ -319,23 +362,27 @@ while ejecutando:
     # Dibujar al trabajador
     pantalla.blit(trabajador.image, (trabajador.rect.x + camera.x, trabajador.rect.y + camera.y))
 
-    # Mostrar "Success"
-    if mostrar_success:
+    # dibujar contador de sprites
+    dibujar_contador_sprites(pantalla, tarjas_recolectadas, 10, 10) # Ejemplo de posición (10, 10)
+
+    # Mostrar la pantalla de victoria
+    if mostrar_winscreen:
+        winscreen_rect = winscreen_image.get_rect(center=(ANCHO // 2, ALTO // 2))
+        pantalla.blit(winscreen_image, winscreen_rect)
+        tiempo_transcurrido_winscreen = pygame.time.get_ticks() - winscreen_timer
+        if tiempo_transcurrido_winscreen >= tiempo_mostrar_winscreen:
+            ejecutando = False
+            print("Tiempo de pantalla de victoria terminado. El juego se cierra.")
+    # Mostrar "Success" (solo si la pantalla de victoria no está activa)
+    elif mostrar_success:
         tiempo_transcurrido = pygame.time.get_ticks() - success_timer
-        alpha = max(0, 255 - (tiempo_transcurrido * 255) // 2000) # Fadeout de 2 segundos
+        alpha = max(0, 255 - (tiempo_transcurrido * 255) // 2000)
         success_image.set_alpha(alpha)
         success_rect = success_image.get_rect(center=(ANCHO // 2, ALTO // 2))
         pantalla.blit(success_image, success_rect)
         if tiempo_transcurrido > 2000:
             mostrar_success = False
 
-    # Verificar si se han recolectado todas las tarjas
-    if tarjas_recolectadas >= num_tarjas_objetivo:
-        juego_terminado = True
-        print("¡Has recolectado todas las tarjas! El juego ha terminado.")
-        ejecutando = False # Por ahora, simplemente detenemos el juego
-
     pygame.display.flip()
 
-# Finalizar Pygame
 pygame.quit()
