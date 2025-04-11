@@ -66,6 +66,8 @@ try:
         pygame.image.load("sprites/number_9.png").convert_alpha()
     ]
     winscreen_image = pygame.image.load("sprites/winscreen.png").convert_alpha()
+    grua_derecha_image = pygame.image.load("sprites/grua_derecha.png").convert_alpha()
+    grua_izquierda_image = pygame.image.load("sprites/grua_izquierda.png").convert_alpha()
 except pygame.error as e:
     print(f"Error al cargar sprites de dirección: {e}")
     pygame.quit()
@@ -207,6 +209,28 @@ class Tarja(pygame.sprite.Sprite):
             self.current_sprite = (self.current_sprite + 1) % len(self.sprites)
             self.image = self.sprites[self.current_sprite]
 
+class Grua(pygame.sprite.Sprite):
+    def __init__(self, y, velocidad):
+        super().__init__()
+        self.image_derecha = grua_derecha_image
+        self.image_izquierda = grua_izquierda_image
+        self.image = self.image_derecha
+        self.rect = self.image.get_rect(topleft=(0, y))
+        self.velocidad = velocidad
+        self.direccion = 1  # 1 para derecha, -1 para izquierda
+
+    def update(self):
+        self.rect.x += self.velocidad * self.direccion
+        if self.direccion == 1:
+            self.image = self.image_derecha
+        elif self.direccion == -1:
+            self.image = self.image_izquierda
+
+        if self.rect.right > ancho_total_mapa:
+            self.direccion = -1
+        elif self.rect.left < 0:
+            self.direccion = 1
+
 # Generar las Tarjas
 num_tarjas = 10
 tarjas_group = pygame.sprite.Group()
@@ -238,6 +262,19 @@ if len(posiciones_validas_tarjas) >= num_tarjas:
         tarjas_group.add(tarja)
 else:
     print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
+
+gruas_group = pygame.sprite.Group()
+velocidad_grua = 2
+for fila_idx, fila in enumerate(mapa_layout):
+    es_pasillo_horizontal = all(elemento == 0 for elemento in fila)
+    if es_pasillo_horizontal:
+        y_pasillo = fila_idx * (largo_bloque_px + ancho_calle_px) + ancho_calle_px // 2 - 50 # Un ajuste manual para subir la posición
+        grua1 = Grua(y_pasillo, velocidad_grua)
+        grua1.rect.x = random.randint(0, ancho_total_mapa // 2)
+        grua2 = Grua(y_pasillo, velocidad_grua)
+        grua2.rect.x = random.randint(ancho_total_mapa // 2, ancho_total_mapa)
+        gruas_group.add(grua1, grua2)
+        
 
 # contador de sprites
 def dibujar_contador_sprites(superficie, valor, posicion_x, posicion_y, espaciado=5):
@@ -342,11 +379,21 @@ while ejecutando:
             mostrar_success = True
             success_timer = pygame.time.get_ticks()
 
+    if pygame.sprite.spritecollide(trabajador, gruas_group, False):
+        print("¡Game Over! Colisión con una grúa.")
+        # Reiniciar el juego
+        tarjas_recolectadas = 0
+        trabajador.rect.center = (start_x, start_y)
+        mostrar_winscreen = False
+        juego_terminado = False
+
     # Actualizar las tarjas (animación)
     tarjas_group.update()
 
     # Actualizar el sprite del trabajador (animación)
     trabajador_group.update()
+
+    gruas_group.update()
 
     # Actualizar la cámara
     camera = actualizar_camara(camera, trabajador.rect, ancho_total_mapa, alto_total_mapa)
@@ -362,8 +409,12 @@ while ejecutando:
     # Dibujar al trabajador
     pantalla.blit(trabajador.image, (trabajador.rect.x + camera.x, trabajador.rect.y + camera.y))
 
-    # dibujar contador de sprites
+    # Dibujar contador de sprites
     dibujar_contador_sprites(pantalla, tarjas_recolectadas, 10, 10) # Ejemplo de posición (10, 10)
+
+    # Dibujar grúas con offset de cámara (sin rectángulos y sin prints de depuración)
+    for grua in gruas_group:
+        pantalla.blit(grua.image, (grua.rect.x + camera.x, grua.rect.y + camera.y))
 
     # Mostrar la pantalla de victoria
     if mostrar_winscreen:
