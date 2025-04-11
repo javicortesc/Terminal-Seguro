@@ -268,10 +268,13 @@ velocidad_grua = 2
 for fila_idx, fila in enumerate(mapa_layout):
     es_pasillo_horizontal = all(elemento == 0 for elemento in fila)
     if es_pasillo_horizontal:
-        y_pasillo = fila_idx * (largo_bloque_px + ancho_calle_px) + ancho_calle_px // 2 - 50 # Un ajuste manual para subir la posición
+        y_pasillo = fila_idx * (largo_bloque_px + ancho_calle_px) + ancho_calle_px // 2 - 50  # posición base
+        offset_inferior = 280  # ajuste para mover la grúa de abajo
+        # Grúa 1: se genera cerca de los contenedores de arriba
         grua1 = Grua(y_pasillo, velocidad_grua)
         grua1.rect.x = random.randint(0, ancho_total_mapa // 2)
-        grua2 = Grua(y_pasillo, velocidad_grua)
+        # Grúa 2: se genera un poco más abajo
+        grua2 = Grua(y_pasillo + offset_inferior, velocidad_grua)
         grua2.rect.x = random.randint(ancho_total_mapa // 2, ancho_total_mapa)
         gruas_group.add(grua1, grua2)
         
@@ -386,6 +389,15 @@ while ejecutando:
         trabajador.rect.center = (start_x, start_y)
         mostrar_winscreen = False
         juego_terminado = False
+        # Reinicializar las tarjas
+        tarjas_group.empty()
+        if len(posiciones_validas_tarjas) >= num_tarjas:
+            posiciones_tarjas = random.sample(posiciones_validas_tarjas, num_tarjas)
+            for x, y in posiciones_tarjas:
+                tarja = Tarja(x, y, tarja_sprites, tarja_animation_speed)
+                tarjas_group.add(tarja)
+        else:
+            print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
 
     # Actualizar las tarjas (animación)
     tarjas_group.update()
