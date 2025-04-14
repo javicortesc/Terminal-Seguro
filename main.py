@@ -70,6 +70,7 @@ try:
     grua_izquierda_image = pygame.image.load("sprites/grua_izquierda.png").convert_alpha()
     game_over_image = pygame.image.load("sprites/game_over.png").convert_alpha()
     play_again_image = pygame.image.load("sprites/play_again.png").convert_alpha()
+    dead_image = pygame.image.load("sprites/dead.png").convert_alpha()
 except pygame.error as e:
     print(f"Error al cargar sprites de dirección: {e}")
     pygame.quit()
@@ -174,8 +175,13 @@ class Trabajador(pygame.sprite.Sprite):
         self.animacion_contador = 0
         self.fotograma_actual = 0
         self.velocidad = 3
+        self.alive = True  # Nuevo atributo para indicar si el jugador está vivo
 
     def update(self):
+        if not self.alive:
+            # Si el jugador está muerto, no se actualiza la animación
+            return
+
         if movimiento_x == 0 and movimiento_y == 0:
             self.image = self.parado[self.direccion]
         else:
@@ -334,12 +340,13 @@ while ejecutando:
         # Si estamos en game over y se hace click, comprobamos si se presionó el botón para volver a jugar.
         if game_over and evento.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            # Obtener el rect del botón (centrado en pantalla, por ejemplo)
             boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
             if boton_rect.collidepoint(mouse_pos):
                 # Resetear variables del juego
                 tarjas_recolectadas = 0
                 trabajador.rect.center = (start_x, start_y)
+                trabajador.alive = True                           # Restaurar al trabajador
+                trabajador.image = trabajador_parado_sprites["abajo"]  # Resetear la imagen a la normal (por ejemplo, la dirección "abajo")
                 game_over = False
                 juego_terminado = False
                 # Reinicializar las tarjas
@@ -352,31 +359,45 @@ while ejecutando:
                 else:
                     print("Advertencia: No hay suficientes espacios válidas para colocar todas las tarjas.")
 
-    # Si el estado es game over, mostramos la pantalla de game over y el botón play again
+    # Si estamos en estado de game over, esperar 2 segundos y entonces mostrar el overlay
     if game_over:
-        game_over_rect = game_over_image.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
-        pantalla.blit(game_over_image, game_over_rect)
-        boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
-        pantalla.blit(play_again_image, boton_rect)
-        pygame.display.flip()
-        continue 
+        elapsed = pygame.time.get_ticks() - game_over_time
+        if elapsed >= 2000:
+            # Crear un overlay semitransparente para obscurecer el fondo en un 50%
+            overlay = pygame.Surface((ANCHO, ALTO))
+            overlay.set_alpha(128)  # 128 es el 50% de 255
+            overlay.fill((0, 0, 0))
+            pantalla.blit(overlay, (0, 0))
+            
+            # Dibujar las imágenes de game over y play again centradas
+            game_over_rect = game_over_image.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
+            pantalla.blit(game_over_image, game_over_rect)
+            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+            pantalla.blit(play_again_image, boton_rect)
+            
+            pygame.display.flip()
+            continue  # Se detiene la ejecución del resto del bucle mientras se espera un click
 
-    # Control del movimiento
-    keys = pygame.key.get_pressed()
-    movimiento_x = 0
-    movimiento_y = 0
-    if keys[pygame.K_w]:
-        movimiento_y = -trabajador.velocidad
-        trabajador.direccion = "arriba"
-    elif keys[pygame.K_s]:
-        movimiento_y = trabajador.velocidad
-        trabajador.direccion = "abajo"
-    elif keys[pygame.K_a]:
-        movimiento_x = -trabajador.velocidad
-        trabajador.direccion = "izquierda"
-    elif keys[pygame.K_d]:
-        movimiento_x = trabajador.velocidad
-        trabajador.direccion = "derecha"
+    # Control del movimiento (solo si el trabajador está vivo)
+    if trabajador.alive:
+        keys = pygame.key.get_pressed()
+        movimiento_x = 0
+        movimiento_y = 0
+        if keys[pygame.K_w]:
+            movimiento_y = -trabajador.velocidad
+            trabajador.direccion = "arriba"
+        elif keys[pygame.K_s]:
+            movimiento_y = trabajador.velocidad
+            trabajador.direccion = "abajo"
+        elif keys[pygame.K_a]:
+            movimiento_x = -trabajador.velocidad
+            trabajador.direccion = "izquierda"
+        elif keys[pygame.K_d]:
+            movimiento_x = trabajador.velocidad
+            trabajador.direccion = "derecha"
+    else:
+        movimiento_x = 0
+        movimiento_y = 0
 
     # Crear un nuevo rect para la futura posición del trabajador
     trabajador_rect_futuro = trabajador.rect.move(movimiento_x, movimiento_y)
@@ -418,9 +439,12 @@ while ejecutando:
             success_timer = pygame.time.get_ticks()
 
     # Detección de colisión con grúas que activa game over
-    if pygame.sprite.spritecollide(trabajador, gruas_group, False):
+    if pygame.sprite.spritecollide(trabajador, gruas_group, False) and not game_over:
         print("¡Game Over! Colisión con una grúa.")
+        trabajador.image = dead_image  # Reemplaza el sprite por dead.png
+        trabajador.alive = False       # Desactivar las actualizaciones de animación
         game_over = True
+        game_over_time = pygame.time.get_ticks()  # Registrar el instante de colisión
 
     # Actualizar las tarjas (animación)
     tarjas_group.update()
