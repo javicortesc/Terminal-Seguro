@@ -68,6 +68,8 @@ try:
     winscreen_image = pygame.image.load("sprites/winscreen.png").convert_alpha()
     grua_derecha_image = pygame.image.load("sprites/grua_derecha.png").convert_alpha()
     grua_izquierda_image = pygame.image.load("sprites/grua_izquierda.png").convert_alpha()
+    game_over_image = pygame.image.load("sprites/game_over.png").convert_alpha()
+    play_again_image = pygame.image.load("sprites/play_again.png").convert_alpha()
 except pygame.error as e:
     print(f"Error al cargar sprites de dirección: {e}")
     pygame.quit()
@@ -109,6 +111,9 @@ juego_terminado = False
 mostrar_winscreen = False
 winscreen_timer = 0
 tiempo_mostrar_winscreen = 5000  # 5000 milisegundos = 5 segundos
+
+# Variable global para el estado de game over
+game_over = False
 
 # Calcular las dimensiones del mapa completo
 num_filas_mapa = len(mapa_layout)
@@ -326,6 +331,36 @@ while ejecutando:
         if evento.type == pygame.QUIT:
             ejecutando = False
 
+        # Si estamos en game over y se hace click, comprobamos si se presionó el botón para volver a jugar.
+        if game_over and evento.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            # Obtener el rect del botón (centrado en pantalla, por ejemplo)
+            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+            if boton_rect.collidepoint(mouse_pos):
+                # Resetear variables del juego
+                tarjas_recolectadas = 0
+                trabajador.rect.center = (start_x, start_y)
+                game_over = False
+                juego_terminado = False
+                # Reinicializar las tarjas
+                tarjas_group.empty()
+                if len(posiciones_validas_tarjas) >= num_tarjas:
+                    posiciones_tarjas = random.sample(posiciones_validas_tarjas, num_tarjas)
+                    for x, y in posiciones_tarjas:
+                        tarja = Tarja(x, y, tarja_sprites, tarja_animation_speed)
+                        tarjas_group.add(tarja)
+                else:
+                    print("Advertencia: No hay suficientes espacios válidas para colocar todas las tarjas.")
+
+    # Si el estado es game over, mostramos la pantalla de game over y el botón play again
+    if game_over:
+        game_over_rect = game_over_image.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
+        pantalla.blit(game_over_image, game_over_rect)
+        boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+        pantalla.blit(play_again_image, boton_rect)
+        pygame.display.flip()
+        continue 
+
     # Control del movimiento
     keys = pygame.key.get_pressed()
     movimiento_x = 0
@@ -382,22 +417,10 @@ while ejecutando:
             mostrar_success = True
             success_timer = pygame.time.get_ticks()
 
+    # Detección de colisión con grúas que activa game over
     if pygame.sprite.spritecollide(trabajador, gruas_group, False):
         print("¡Game Over! Colisión con una grúa.")
-        # Reiniciar el juego
-        tarjas_recolectadas = 0
-        trabajador.rect.center = (start_x, start_y)
-        mostrar_winscreen = False
-        juego_terminado = False
-        # Reinicializar las tarjas
-        tarjas_group.empty()
-        if len(posiciones_validas_tarjas) >= num_tarjas:
-            posiciones_tarjas = random.sample(posiciones_validas_tarjas, num_tarjas)
-            for x, y in posiciones_tarjas:
-                tarja = Tarja(x, y, tarja_sprites, tarja_animation_speed)
-                tarjas_group.add(tarja)
-        else:
-            print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
+        game_over = True
 
     # Actualizar las tarjas (animación)
     tarjas_group.update()
