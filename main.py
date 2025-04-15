@@ -1,6 +1,15 @@
 import pygame
 import random
+import sys
+import os
 
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta al recurso, útil para PyInstaller."""
+    try:
+        base_path = sys._MEIPASS  # directorio temporal creado por PyInstaller
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 # Inicializar Pygame
 pygame.init()
 pygame.mixer.init()  # Inicializar el mezclador
@@ -17,14 +26,14 @@ game_start_time = pygame.time.get_ticks()
 scoreboard = []  # Aquí se almacenarán los tiempos (en milisegundos)
 
 # Inicializar font para el contador
-font = pygame.font.Font("fonts/PressStart2P-Regular.ttf", 24)  # Ajusta el tamaño según tus necesidades # También puedes usar una fuente específica
+font = pygame.font.Font(resource_path("fonts/PressStart2P-Regular.ttf"), 24)
 
 # Cargar sonidos
-bg_music = pygame.mixer.Sound("sounds/background.mp3")  # Música de fondo
-game_over_music = pygame.mixer.Sound("sounds/game_over.mp3")  # Música de game over
-victory_music = pygame.mixer.Sound("sounds/victory.mp3")  # Música de victoria
-pickup_sfx = pygame.mixer.Sound("sounds/pickup.mp3")  # Efecto al recoger tarja
-hit_sfx = pygame.mixer.Sound("sounds/hit.mp3")  # Efecto al ser atropellado
+bg_music = pygame.mixer.Sound(resource_path("sounds/background.mp3"))  # Música de fondo
+game_over_music = pygame.mixer.Sound(resource_path("sounds/game_over.mp3"))  # Música de game over
+victory_music = pygame.mixer.Sound(resource_path("sounds/victory.mp3"))  # Música de victoria
+pickup_sfx = pygame.mixer.Sound(resource_path("sounds/pickup.mp3"))  # Efecto al recoger tarja
+hit_sfx = pygame.mixer.Sound(resource_path("sounds/hit.mp3"))  # Efecto al ser atropellado
 
 bg_music.play(loops=-1)
 
@@ -45,49 +54,49 @@ mapa_layout = [
 
 # Cargar los sprites del trabajador para cada dirección
 try:
-    trabajador_arriba_parado = pygame.image.load("sprites/trabajador_arriba_parado.png").convert_alpha()
+    trabajador_arriba_parado = pygame.image.load(resource_path("sprites/trabajador_arriba_parado.png")).convert_alpha()
     trabajador_arriba_camina = [
-        pygame.image.load("sprites/trabajador_arriba_camina_1.png").convert_alpha(),
-        pygame.image.load("sprites/trabajador_arriba_camina_2.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/trabajador_arriba_camina_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/trabajador_arriba_camina_2.png")).convert_alpha()
     ]
-    trabajador_abajo_parado = pygame.image.load("sprites/trabajador_abajo_parado.png").convert_alpha()
+    trabajador_abajo_parado = pygame.image.load(resource_path("sprites/trabajador_abajo_parado.png")).convert_alpha()
     trabajador_abajo_camina = [
-        pygame.image.load("sprites/trabajador_abajo_camina_1.png").convert_alpha(),
-        pygame.image.load("sprites/trabajador_abajo_camina_2.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/trabajador_abajo_camina_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/trabajador_abajo_camina_2.png")).convert_alpha()
     ]
-    trabajador_izquierda_parado = pygame.image.load("sprites/trabajador_izquierda_parado.png").convert_alpha()
+    trabajador_izquierda_parado = pygame.image.load(resource_path("sprites/trabajador_izquierda_parado.png")).convert_alpha()
     trabajador_izquierda_camina = [
-        pygame.image.load("sprites/trabajador_izquierda_camina_1.png").convert_alpha(),
-        pygame.image.load("sprites/trabajador_izquierda_camina_2.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/trabajador_izquierda_camina_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/trabajador_izquierda_camina_2.png")).convert_alpha()
     ]
-    trabajador_derecha_parado = pygame.image.load("sprites/trabajador_derecha_parado.png").convert_alpha()
+    trabajador_derecha_parado = pygame.image.load(resource_path("sprites/trabajador_derecha_parado.png")).convert_alpha()
     trabajador_derecha_camina = [
-        pygame.image.load("sprites/trabajador_derecha_camina_1.png").convert_alpha(),
-        pygame.image.load("sprites/trabajador_derecha_camina_2.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/trabajador_derecha_camina_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/trabajador_derecha_camina_2.png")).convert_alpha()
     ]
     tarja_sprites = [
-        pygame.image.load("sprites/tarja_1.png").convert_alpha(),
-        pygame.image.load("sprites/tarja_2.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/tarja_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/tarja_2.png")).convert_alpha()
     ]
-    success_image = pygame.image.load("sprites/success.png").convert_alpha()
+    success_image = pygame.image.load(resource_path("sprites/success.png")).convert_alpha()
     numero_sprites = [
-        pygame.image.load("sprites/number_0.png").convert_alpha(),
-        pygame.image.load("sprites/number_1.png").convert_alpha(),
-        pygame.image.load("sprites/number_2.png").convert_alpha(),
-        pygame.image.load("sprites/number_3.png").convert_alpha(),
-        pygame.image.load("sprites/number_4.png").convert_alpha(),
-        pygame.image.load("sprites/number_5.png").convert_alpha(),
-        pygame.image.load("sprites/number_6.png").convert_alpha(),
-        pygame.image.load("sprites/number_7.png").convert_alpha(),
-        pygame.image.load("sprites/number_8.png").convert_alpha(),
-        pygame.image.load("sprites/number_9.png").convert_alpha()
+        pygame.image.load(resource_path("sprites/number_0.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_1.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_2.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_3.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_4.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_5.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_6.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_7.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_8.png")).convert_alpha(),
+        pygame.image.load(resource_path("sprites/number_9.png")).convert_alpha()
     ]
-    winscreen_image = pygame.image.load("sprites/winscreen.png").convert_alpha()
-    grua_derecha_image = pygame.image.load("sprites/grua_derecha.png").convert_alpha()
-    grua_izquierda_image = pygame.image.load("sprites/grua_izquierda.png").convert_alpha()
-    game_over_image = pygame.image.load("sprites/game_over.png").convert_alpha()
-    play_again_image = pygame.image.load("sprites/play_again.png").convert_alpha()
-    dead_image = pygame.image.load("sprites/dead.png").convert_alpha()
+    winscreen_image = pygame.image.load(resource_path("sprites/winscreen.png")).convert_alpha()
+    grua_derecha_image = pygame.image.load(resource_path("sprites/grua_derecha.png")).convert_alpha()
+    grua_izquierda_image = pygame.image.load(resource_path("sprites/grua_izquierda.png")).convert_alpha()
+    game_over_image = pygame.image.load(resource_path("sprites/game_over.png")).convert_alpha()
+    play_again_image = pygame.image.load(resource_path("sprites/play_again.png")).convert_alpha()
+    dead_image = pygame.image.load(resource_path("sprites/dead.png")).convert_alpha()
 except pygame.error as e:
     print(f"Error al cargar sprites de dirección: {e}")
     pygame.quit()
@@ -96,10 +105,10 @@ except pygame.error as e:
 # Cargar los sprites de los contenedores individuales
 try:
     contenedor_sprites = [
-        pygame.image.load("sprites/contenedor_1.png").convert(),
-        pygame.image.load("sprites/contenedor_2.png").convert(),
-        pygame.image.load("sprites/contenedor_3.png").convert(),
-        pygame.image.load("sprites/contenedor_4.png").convert()
+        pygame.image.load(resource_path("sprites/contenedor_1.png")).convert(),
+        pygame.image.load(resource_path("sprites/contenedor_2.png")).convert(),
+        pygame.image.load(resource_path("sprites/contenedor_3.png")).convert(),
+        pygame.image.load(resource_path("sprites/contenedor_4.png")).convert()
     ]
 except pygame.error as e:
     print(f"Error al cargar sprites de contenedores: {e}")
@@ -108,7 +117,7 @@ except pygame.error as e:
 
 # Cargar el sprite de asfalto
 try:
-    asfalto_tile = pygame.image.load("sprites/asfalto.png").convert()
+    asfalto_tile = pygame.image.load(resource_path("sprites/asfalto.png")).convert()
 except pygame.error as e:
     print(f"Error al cargar el sprite de asfalto: {e}")
     pygame.quit()
