@@ -13,32 +13,5 @@
 - **Recolectar tarjas:** Recoge las tarjas que encuentres en el camino para avanzar.
 - **Evitar grúas:** Una colisión con una grúa reiniciará tus recolectas. ¡Mantente alerta!
 
-## Instalación y Ejecución 🔧
-
-1. **Clona el repositorio:**
-   ```shell
-   git clone https://github.com/TuUsuario/Terminal-Seguro.git
-   ```
-
-2. **Instala las dependencias:**
-   Asegúrate de tener [Python](https://www.python.org/) y [Pygame](https://www.pygame.org/) instalados:
-   ```shell
-   pip install pygame
-   ```
-
-3. **Ejecuta el juego:**
-   ```shell
-   python main.py
-   ```
-
-## Recursos 📚
-- **Sprites:** Todos los sprites están ubicados en la carpeta `sprites/`.
-- **Layout del mapa:** Define la distribución del terminal y las posiciones de contenedores, calles y grúas en `main.py`.
-
-¡Diviértete jugando y ayudando a mantener el terminal seguro! 💪😄
-
----
-
-> Nota: Este proyecto es una experimentación divertida inspirada en los clásicos videojuegos retro. Si encuentras algún bug o tienes sugerencias, ¡no dudes en abrir un issue o enviar un pull request! 🚀
-
-Happy coding! 👾
+## Ejecutable
+Para jugar, simplemente presiona el archivo **Terminal Seguro.exe**. Al hacerlo se abrirá el juego y podrás disfrutar de toda la experiencia retro en tu PC.  
