@@ -3,6 +3,7 @@ import random
 
 # Inicializar Pygame
 pygame.init()
+pygame.mixer.init()  # Inicializar el mezclador
 
 # Dimensiones de la ventana
 ANCHO = 1024
@@ -11,19 +12,35 @@ pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Terminal Seguro 16-bit")
 clock = pygame.time.Clock()
 
+# Guardar el instante de inicio del juego y crear la lista de puntajes
+game_start_time = pygame.time.get_ticks()
+scoreboard = []  # Aquí se almacenarán los tiempos (en milisegundos)
+
+# Inicializar font para el contador
+font = pygame.font.Font("fonts/PressStart2P-Regular.ttf", 24)  # Ajusta el tamaño según tus necesidades # También puedes usar una fuente específica
+
+# Cargar sonidos
+bg_music = pygame.mixer.Sound("sounds/background.mp3")  # Música de fondo
+game_over_music = pygame.mixer.Sound("sounds/game_over.mp3")  # Música de game over
+victory_music = pygame.mixer.Sound("sounds/victory.mp3")  # Música de victoria
+pickup_sfx = pygame.mixer.Sound("sounds/pickup.mp3")  # Efecto al recoger tarja
+hit_sfx = pygame.mixer.Sound("sounds/hit.mp3")  # Efecto al ser atropellado
+
+bg_music.play(loops=-1)
+
 # Definición del layout del terminal
 mapa_layout = [
-    [1, 1, 0, 1, 1, 0, 1, 1],      # Fila 0
-    [1, 1, 0, 1, 0, 0, 1, 1],      # Fila 1
-    [1, 1, 0, 0, 1, 0, 1, 1],      # Fila 2
-    [0, 0, 0, 0, 0, 0, 0, 0],      # Fila 3 (Calle horizontal)
-    [1, 1, 0, 1, 1, 0, 1, 1],      # Fila 4
-    [1, 1, 0, 1, 1, 0, 1, 1],      # Fila 5
-    [1, 1, 0, 1, 1, 0, 1, 1],      # Fila 6
-    [0, 0, 0, 0, 0, 0, 0, 0],      # Fila 7 (Calle horizontal)
-    [1, 1, 1, 1, 1, 1, 1, 1],      # Fila 8
-    [1, 1, 1, 1, 1, 1, 1, 1],      # Fila 9
-    [1, 1, 1, 1, 1, 1, 1, 1]       # Fila 10
+    [1, 1, 0, 1, 1, 0, 1, 1],  # Fila 0
+    [1, 1, 0, 1, 0, 0, 1, 1],  # Fila 1
+    [1, 1, 0, 0, 1, 0, 1, 1],  # Fila 2
+    [0, 0, 0, 0, 0, 0, 0, 0],  # Fila 3 (Calle horizontal)
+    [1, 1, 0, 1, 1, 0, 1, 1],  # Fila 4
+    [1, 1, 0, 1, 1, 0, 1, 1],  # Fila 5
+    [1, 1, 0, 1, 1, 0, 1, 1],  # Fila 6
+    [0, 0, 0, 0, 0, 0, 0, 0],  # Fila 7 (Calle horizontal)
+    [1, 1, 1, 0, 0, 1, 1, 1],  # Fila 8
+    [1, 1, 1, 0, 0, 1, 1, 1],  # Fila 9
+    [1, 1, 1, 0, 0, 1, 1, 1]  # Fila 10
 ]
 
 # Cargar los sprites del trabajador para cada dirección
@@ -161,6 +178,7 @@ tarjas_recolectadas = 0
 num_tarjas_objetivo = 10
 mostrar_success = False
 success_timer = 0
+tarjas_group = None # Inicializamos tarjas_group aquí
 
 # Clase para el Trabajador
 class Trabajador(pygame.sprite.Sprite):
@@ -244,8 +262,8 @@ class Grua(pygame.sprite.Sprite):
 
 # Generar las Tarjas
 num_tarjas = 10
-tarjas_group = pygame.sprite.Group()
-tarja_animation_speed = 15 # Ajusta la velocidad de la animación de las tarjas
+tarjas_group = pygame.sprite.Group() # Se inicializa aquí
+tarja_animation_speed = 15  # Ajusta la velocidad de la animación de las tarjas
 
 # Calcular las posiciones válidas para las tarjas (calles)
 posiciones_validas_tarjas = []
@@ -263,7 +281,7 @@ if num_filas_layout > 0:
                 offset_x = random.randint(-ancho_bloque_px // 4, ancho_bloque_px // 4)
                 offset_y = random.randint(-largo_bloque_px // 4, largo_bloque_px // 4)
                 posiciones_validas_tarjas.append((x_calle + offset_x - tarja_sprites[0].get_width() // 2,
-                                                  y_calle + offset_y - tarja_sprites[0].get_height() // 2))
+                                                 y_calle + offset_y - tarja_sprites[0].get_height() // 2))
 
 # Seleccionar aleatoriamente 10 posiciones únicas para las tarjas
 if len(posiciones_validas_tarjas) >= num_tarjas:
@@ -275,7 +293,7 @@ else:
     print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
 
 gruas_group = pygame.sprite.Group()
-velocidad_grua = 2
+velocidad_grua = 4
 for fila_idx, fila in enumerate(mapa_layout):
     es_pasillo_horizontal = all(elemento == 0 for elemento in fila)
     if es_pasillo_horizontal:
@@ -288,7 +306,6 @@ for fila_idx, fila in enumerate(mapa_layout):
         grua2 = Grua(y_pasillo + offset_inferior, velocidad_grua)
         grua2.rect.x = random.randint(ancho_total_mapa // 2, ancho_total_mapa)
         gruas_group.add(grua1, grua2)
-        
 
 # contador de sprites
 def dibujar_contador_sprites(superficie, valor, posicion_x, posicion_y, espaciado=5):
@@ -337,18 +354,19 @@ while ejecutando:
         if evento.type == pygame.QUIT:
             ejecutando = False
 
-        # Si estamos en game over y se hace click, comprobamos si se presionó el botón para volver a jugar.
-        if game_over and evento.type == pygame.MOUSEBUTTONDOWN:
+        # Dentro del manejo de eventos para reiniciar el juego (tanto en game over como en winscreen)
+        if (game_over or mostrar_winscreen) and evento.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 200))
             if boton_rect.collidepoint(mouse_pos):
-                # Resetear variables del juego
+                # Reiniciar variables del juego...
                 tarjas_recolectadas = 0
                 trabajador.rect.center = (start_x, start_y)
-                trabajador.alive = True                           # Restaurar al trabajador
-                trabajador.image = trabajador_parado_sprites["abajo"]  # Resetear la imagen a la normal (por ejemplo, la dirección "abajo")
+                trabajador.alive = True
+                trabajador.image = trabajador_parado_sprites["abajo"]
                 game_over = False
                 juego_terminado = False
+                mostrar_winscreen = False
                 # Reinicializar las tarjas
                 tarjas_group.empty()
                 if len(posiciones_validas_tarjas) >= num_tarjas:
@@ -357,26 +375,35 @@ while ejecutando:
                         tarja = Tarja(x, y, tarja_sprites, tarja_animation_speed)
                         tarjas_group.add(tarja)
                 else:
-                    print("Advertencia: No hay suficientes espacios válidas para colocar todas las tarjas.")
+                    print("Advertencia: No hay suficientes espacios válidos para colocar todas las tarjas.")
+                # Resetear el tiempo de inicio para el nuevo intento
+                game_start_time = pygame.time.get_ticks()
+                # Detener las pistas de game over o de victoria y reiniciar la música de fondo
+                game_over_music.stop()
+                victory_music.stop()
+                bg_music.play(loops=-1)
 
     # Si estamos en estado de game over, esperar 2 segundos y entonces mostrar el overlay
     if game_over:
         elapsed = pygame.time.get_ticks() - game_over_time
         if elapsed >= 2000:
-            # Crear un overlay semitransparente para obscurecer el fondo en un 50%
-            overlay = pygame.Surface((ANCHO, ALTO))
-            overlay.set_alpha(128)  # 128 es el 50% de 255
-            overlay.fill((0, 0, 0))
-            pantalla.blit(overlay, (0, 0))
-            
-            # Dibujar las imágenes de game over y play again centradas
+            # Dibujar "game over"
             game_over_rect = game_over_image.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
             pantalla.blit(game_over_image, game_over_rect)
-            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+
+            # Dibujar el contador de tarjas recolectadas
+            tarjas_text = f"Tarjas realizadas: {tarjas_recolectadas}"
+            tarjas_surface = font.render(tarjas_text, True, (255, 255, 255))
+            # Ajusta la posición según desees (en este caso, se coloca entre game_over y el botón)
+            tarjas_rect = tarjas_surface.get_rect(center=(ANCHO // 2, ALTO // 2 + 100))
+            pantalla.blit(tarjas_surface, tarjas_rect)
+
+            # Dibujar el botón "play again"
+            boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 200))
             pantalla.blit(play_again_image, boton_rect)
-            
+
             pygame.display.flip()
-            continue  # Se detiene la ejecución del resto del bucle mientras se espera un click
+        continue  # Se pausa el bucle hasta que se haga clic en el botón
 
     # Control del movimiento (solo si el trabajador está vivo)
     if trabajador.alive:
@@ -399,7 +426,7 @@ while ejecutando:
         movimiento_x = 0
         movimiento_y = 0
 
-    # Crear un nuevo rect para la futura posición del trabajador
+    # Crear un nuevo rectpara la futura posición del trabajador
     trabajador_rect_futuro = trabajador.rect.move(movimiento_x, movimiento_y)
 
     # Verificar colisiones con contenedores
@@ -427,22 +454,42 @@ while ejecutando:
     tarjas_colisionadas = pygame.sprite.spritecollide(trabajador, tarjas_group, True)
     if tarjas_colisionadas:
         tarjas_recolectadas += len(tarjas_colisionadas)
+        pickup_sfx.play()  # Reproducir el sonido de recolección
         print(f"Tarjas recolectadas: {tarjas_recolectadas}")
+        mostrar_success = True # Muestra el mensaje de éxito
+        success_timer = pygame.time.get_ticks() # Reinicia el timer
+
         if tarjas_recolectadas >= num_tarjas_objetivo and not juego_terminado:
+            # Calcular el tiempo transcurrido (score)
+            finish_time = pygame.time.get_ticks() - game_start_time
+            scoreboard.append(finish_time)
+            scoreboard.sort()  # Ordena los scores de menor a mayor
+
+            # Convertir finish_time de ms a minutos y segundos
+            score_sec = finish_time // 1000
+            minutes = score_sec // 60
+            seconds = score_sec % 60
+            final_time_str = f"Tiempo: {minutes} m {seconds:02d} s"
+            # Crear la superficie con la fuente seleccionada
+            final_time_surface = font.render(final_time_str, True, (255, 255, 255))
+
+            print("¡Has recolectado todas las tarjas! Mostrando pantalla de victoria.")
+            bg_music.stop()  # Detén la música de fondo
+            victory_music.play()  # Reproduce la música de victoria
+
+            # Se activa la winscreen y se almacena la superficie del tiempo final para mostrarla
             mostrar_winscreen = True
             winscreen_timer = pygame.time.get_ticks()
             juego_terminado = True
-            mostrar_success = False # Desactivar el mensaje de "Success"
-            print("¡Has recolectado todas las tarjas! Mostrando pantalla de victoria.")
-        elif not juego_terminado:
-            mostrar_success = True
-            success_timer = pygame.time.get_ticks()
-
+            mostrar_success = False
     # Detección de colisión con grúas que activa game over
     if pygame.sprite.spritecollide(trabajador, gruas_group, False) and not game_over:
         print("¡Game Over! Colisión con una grúa.")
         trabajador.image = dead_image  # Reemplaza el sprite por dead.png
-        trabajador.alive = False       # Desactivar las actualizaciones de animación
+        trabajador.alive = False  # Desactivar las actualizaciones de animación
+        hit_sfx.play()  # Reproduce el efecto de atropello
+        bg_music.stop()  # Detén la música de fondo
+        game_over_music.play()  # Inicia la música de game over
         game_over = True
         game_over_time = pygame.time.get_ticks()  # Registrar el instante de colisión
 
@@ -469,22 +516,39 @@ while ejecutando:
     pantalla.blit(trabajador.image, (trabajador.rect.x + camera.x, trabajador.rect.y + camera.y))
 
     # Dibujar contador de sprites
-    dibujar_contador_sprites(pantalla, tarjas_recolectadas, 10, 10) # Ejemplo de posición (10, 10)
+    dibujar_contador_sprites(pantalla, tarjas_recolectadas, 10, 10)  # Ejemplo de posición (10, 10)
 
     # Dibujar grúas con offset de cámara (sin rectángulos y sin prints de depuración)
     for grua in gruas_group:
         pantalla.blit(grua.image, (grua.rect.x + camera.x, grua.rect.y + camera.y))
 
-    # Mostrar la pantalla de victoria
-    if mostrar_winscreen:
+    # Dibujar el contador de tiempo u otros elementos cuando el juego esté activo...
+    if not juego_terminado and not game_over:
+        # ... dibujar contador, sprites, etc.
+        current_time = pygame.time.get_ticks() - game_start_time
+        time_sec = current_time // 1000
+        minutes = time_sec // 60
+        seconds = time_sec % 60
+        time_text = f"tiempo: {minutes} m {seconds:02d} s"
+        text_surface = font.render(time_text, True, (255, 255, 255))
+        x = ANCHO - text_surface.get_width() - 10
+        y = 10
+        pantalla.blit(text_surface, (x, y))
+    elif mostrar_winscreen:
         winscreen_rect = winscreen_image.get_rect(center=(ANCHO // 2, ALTO // 2))
         pantalla.blit(winscreen_image, winscreen_rect)
-        tiempo_transcurrido_winscreen = pygame.time.get_ticks() - winscreen_timer
-        if tiempo_transcurrido_winscreen >= tiempo_mostrar_winscreen:
-            ejecutando = False
-            print("Tiempo de pantalla de victoria terminado. El juego se cierra.")
+
+        # Dibujar el tiempo final justo debajo de winscreen (por ejemplo, 100px debajo del centro)
+        # Asegúrate de que la variable final_time_surface se haya definido en la detección de victoria
+        if 'final_time_surface' in globals():
+            final_time_rect = final_time_surface.get_rect(midbottom=(ANCHO // 2, winscreen_rect.top - 10))
+            pantalla.blit(final_time_surface, final_time_rect)
+
+        # Dibujar el botón "play again"
+        boton_rect = play_again_image.get_rect(center=(ANCHO // 2, ALTO // 2 + 200))
+        pantalla.blit(play_again_image, boton_rect)
     # Mostrar "Success" (solo si la pantalla de victoria no está activa)
-    elif mostrar_success:
+    if mostrar_success:
         tiempo_transcurrido = pygame.time.get_ticks() - success_timer
         alpha = max(0, 255 - (tiempo_transcurrido * 255) // 2000)
         success_image.set_alpha(alpha)
